@@ -1,0 +1,4 @@
+.idea
+.vscode
+*.pem
+sql_log.txt

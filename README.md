@@ -5,7 +5,7 @@ The purpose of this POC is to allow for the usa of sql queries to trigger events
 
 ### Create a Self Signed Certificate
 ```bash
-openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
 ```
 You will need to generate your own SSL certificates and to enable SSL support.
 

@@ -108,7 +108,6 @@ func loadTLSCertificate() tls.Certificate {
 	return cert
 }
 
-// Relay traffic between client and server, with option to intercept SQL commands
 func forwardTraffic(
 	src net.Conn,
 	dst net.Conn,
@@ -127,7 +126,7 @@ func forwardTraffic(
 		}
 
 		if intercept && direction == "client" {
-			logSQLCommand(buf[:n]) // Intercept and log SQL commands sent by the client
+			logSQLCommand(string(buf[:n]))
 		}
 
 		_, err = dst.Write(buf[:n])
@@ -138,19 +137,18 @@ func forwardTraffic(
 	}
 }
 
-// Log intercepted SQL commands
-func logSQLCommand(data []byte) {
+func logSQLCommand(command string) {
 	logFile, err := os.OpenFile("sql_log.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Error opening log file: %v", err)
 	}
 	defer logFile.Close()
 
-	logData := fmt.Sprintf("Intercepted SQL Command: %s\n", string(data))
+	logData := fmt.Sprintf("Intercepted SQL Command: %s\n", command)
 	_, err = logFile.WriteString(logData)
 	if err != nil {
 		log.Printf("Error writing to log file: %v", err)
 	}
 
-	log.Printf("Intercepted SQL Command: %s", string(data))
+	log.Printf("Intercepted SQL Command: %s", command)
 }

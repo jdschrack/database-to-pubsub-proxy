@@ -1,12 +1,12 @@
 package utilities
 
 import (
-	"context"
-	"log"
-	"time"
+  "context"
+  "log"
+  "time"
 
-	"cloud.google.com/go/pubsub"
-	"github.com/jdschrack/database-to-pubsub-proxy/models"
+  "cloud.google.com/go/pubsub"
+  "github.com/jdschrack/database-to-pubsub-proxy/models"
 )
 
 // Avro schema for SQLCommandEvent
@@ -24,54 +24,54 @@ import (
 //}
 
 func PublishSQLCommand(sqlCommand, database, user string) error {
-	// Create a Pub/Sub client
-	ctx := context.Background()
+  // Create a Pub/Sub client
+  ctx := context.Background()
 
-	record := models.SqlCommandEvent{
-		SqlCommand: sqlCommand,
-		Database:   database,
-		Timestamp:  time.Now().Format(time.RFC3339),
-		User:       user,
-	}
+  record := models.SqlCommandEvent{
+    SqlCommand: sqlCommand,
+    Database:   database,
+    Timestamp:  time.Now().Format(time.RFC3339),
+    User:       user,
+  }
 
-	pubsubClient, err := pubsub.NewClient(ctx, "jh-sdb-dig-banno-capybara")
-	if err != nil {
-		return err
-	}
-	defer pubsubClient.Close() // Prepare the Avro record
+  pubsubClient, err := pubsub.NewClient(ctx, "jh-sdb-dig-banno-capybara")
+  if err != nil {
+    return err
+  }
+  defer pubsubClient.Close() // Prepare the Avro record
 
-	//Publish the Avro-encoded message to Pub/Sub
-	topic := pubsubClient.Topic("symitar-sql-events")
+  //Publish the Avro-encoded message to Pub/Sub
+  topic := pubsubClient.Topic("symitar-sql-events")
 
-	cfg, err := topic.Config(ctx)
-	if err != nil {
-		log.Fatalf("Failed to get topic config: %v", err)
-		return err
-	}
+  cfg, err := topic.Config(ctx)
+  if err != nil {
+    log.Fatalf("Failed to get topic config: %v", err)
+    return err
+  }
 
-	log.Printf("Topic config: %+v", cfg)
+  log.Printf("Topic config: %+v", cfg)
 
-	encoding := cfg.SchemaSettings.Encoding
+  encoding := cfg.SchemaSettings.Encoding
+  x := cfg.SchemaSettings.Schema //read schema here
+  msg, err := CreateAvroMessage(record, encoding)
 
-	msg, err := CreateAvroMessage(record, encoding)
+  if err != nil {
+    log.Fatalf("Failed to create Avro message: %v", err)
+    return err
+  }
 
-	if err != nil {
-		log.Fatalf("Failed to create Avro message: %v", err)
-		return err
-	}
+  result := topic.Publish(
+    ctx, &pubsub.Message{
+      Data: msg,
+    },
+  )
 
-	result := topic.Publish(
-		ctx, &pubsub.Message{
-			Data: msg,
-		},
-	)
+  // Wait for the result and log the message ID
+  id, err := result.Get(ctx)
+  if err != nil {
+    return err
+  }
 
-	// Wait for the result and log the message ID
-	id, err := result.Get(ctx)
-	if err != nil {
-		return err
-	}
-
-	log.Printf("Published message with ID: %s", id)
-	return nil
+  log.Printf("Published message with ID: %s", id)
+  return nil
 }
